@@ -1,0 +1,32 @@
+version: '3.8'
+services:
+  nginx:
+    build: .
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /home/diamondmovers/Documents/Projects/site_template/sites/wagtail-template/static:/var/www/web/diamondmovers/static
+      - /home/diamondmovers/Documents/Projects/site_template/sites/wagtail-template/media:/var/www/web/diamondmovers/media
+      - ./sites-enabled:/etc/nginx/sites-enabled/
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    restart: "always"
+    networks:
+      - nginx_network
+  certbot:
+    container_name: certbot
+    image: certbot/certbot
+    restart: unless-stopped
+    depends_on:
+      - nginx
+    networks:
+      nginx_network:
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"      
+networks:
+  nginx_network:
+    external: true # НЕ создаем network
+    driver: bridge
